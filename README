@@ -1,0 +1,121 @@
+*****----- Taner MUSTAFA - 325 CB - POO Tema 3 - Simulator CLI Linux -----*****
+
+
+	Tema este facuta cu ajutorul Design Pattern-urilor Factory, Composite, 
+Command, si Singleton.
+	
+	Design Pattern-ul <Composite> este alcatuit din clasa "frunza" "File", 
+ce reprezinta un fisier si clasa "composite" "Folder", care reprezinta 
+un director cu 0 sau mai multe fisiere. Acestea implementeaza interfata 
+"GenericFile".
+
+	Design Pattern-ul <Command> este alcatuit din clasele specifice pentru 
+fiecare comanda ("Order" (interfata) si clasele care o implementeaza: "LS", 
+"PWD", "CD", "RM", "CP", "MV", "MKDIR" & "TOUCH") si clasa care inregistreaza 
+si executa comenzile ("OrderPlacer").
+
+	Design Pattern-ul <Factory> este alcatuit din clasa "OrderTaker", care 
+citeste comenzile din input, le parseaza clasei "OrderFactory" care creeaza 
+obiectul corespunzator comenzii si le executa.
+
+	Clasele de tip <Singleton> sunt cele pentru care nu este necesara decat
+ o singura instanta: "OrderFactory", "OrderPlacer" & "OrderTaker".
+
+
+
+
+
+*****---------Explicatii pe scurt (este destul de evident din cod)-----******
+*****-------------despre cum functioneaza programul:---------------------******
+
+
+		/---------Clasa "Main":---------/
+
+	  Retine in 2 variabile statice globale folderul "root" si directorul 
+curent.
+	  Contine metodele:
+	    - "findChild" : cauta un fisier cu numele dat ca parametru in
+folderul dat ca parametru si il returneaza.
+	    - "findAllChildren" : salveaza in <ArrayList>-ul dat ca parametru 
+toate fisierele posibile la care duce path-ul (care contine '*') ce porneste 
+din folderul dat ca parametru. Metoda este recursiva.
+	    - "getAllPaths" : seteaza folderul din care trebuie inceputa 
+cautarea (in functie de inceputul path-ului (".", "./", "/", "..")) si apeleaza
+ metoda "findAllChildren", care populeaza <ArrayList>-ul cu toate variantele 
+posibile.
+	    - "main" : creeaza directorul "root" si il seteaza pe cel curent 
+tot in "root". Apeleaza metoda care citeste, creeaza si executa comenzile.
+
+
+
+		*****-----<Command> Design Patter-----*****
+		/---------Interfata "Order":---------/
+
+	    Contine metoda "execute", care primeste ca parametru fisierele de 
+output. Respecta Design Pattern-ul <Command>.
+
+	Clasele "LS", "PWD", "CD", "MKDIR", "TOUCH", "CP", "MV":
+		Implementeaza "Order". Toate (exceptand "PWD") primesc ca 
+parametru 1 sau 2 path-uri. Apeland metoda "getAllPaths" din clasa "Main", 
+se creeaza un <ArrayList> cu toate fisierele la care duce path-ul (1 singur 
+posibil daca acesta nu contine '*'); lista este parcursa si se executa comanda 
+pentru fiecare fisier obtinut in parte.
+		In comenzi precum "MKDIR" sau "LS", se sterg din lista toate 
+fisierele obtinue, deoarece este necesar a se gasi un director.
+	    
+	Clasa "CP":
+		S-a definit metoda "copy", care cloneaza un folder, cu
+ tot cu fisierele pe care acesta le contine. Metoda "clone" care implementeaza 
+"Cloneable" cloneaza numai atributele unui folder, iar pentru fisierele pe care
+ acesta le contine, doar creeaza un pointer nou, deci nu este o copiere propriu
+-zisa.
+
+	Clasa "LS":
+		In functie de numarul de argumente, decide daca "ls" se face 
+recursiv sau nu si daca aceasta mai contine si comanda "GREP" dupa.
+		- metoda "ls_simple" implementeaza "ls".
+		- metoda "ls_R" implementeaza "ls -R". Este o metoda recursiva.
+		In cazul in care exista si comanda "GREP", inainte de a se face
+ outputul, se verific daca acesta se potriveste cu expresia regulata.
+		- metoda "getAbsolutePath" returneaza calea absoluta pentru 
+un fisier dat ca parametru. Pentru comanda "ls", se afiseaza mereu calea abs..
+
+	Clasa "OrderPlacer":
+		Respecta Design Pattern-ul <Command>, este de tip <Singleton>.
+		- metoda "takeOrder" : introduce order-ul primit ca parametru 
+intr-un queue.
+		- metoda "placeOrders" : parcurge queue-ul si executa order-ele
+ din acesta.
+
+
+
+		*****-----<Composite> Design Patter-----*****
+		/---------Interfata "GenericFile":---------/
+
+	  Contine metodele care returneaza numele fisierului, tipul ("File" sau
+ "Folder"), folderul parinte si metodele care seteaza parintele fisierului si 
+il cloneaza.
+
+	Clasele "File" & "Folder":
+		Implementeaza "GenericFile". In plus, "Folder" contine:
+		    - <ArrayList>-ul care contine fisierele din folder.
+		    - metoda "addFile" : adauga un fisier nou in folder.
+		    - metoda "removeFile" : sterge un fisier din folder.
+		Este necesara metoda "clone2" pentru a putea fi declarata in 
+interfata "GenericFile". Aceasta apeleaza metoda "clone" din interfata 
+"Cloneable" pentru a putea clona un fisier.
+
+
+
+		*****-----<Factory> Design Patter-----*****
+
+	Clasa "OrderFactory" - Singleton:
+	    Primeste o comanda sub forma de String, o token-izeaza in functie 
+de spatii si creeaza obiectul corespunzator acesteia, de tip "Order", dand ca 
+parametru argumentele specifice acestora.
+
+	Clasa "OrderTaker" - Singleton:
+	    Citeste comenzile din fisierul de input si le parseaza obiectului 
+de tip factory pentru a crea un obiect de tip "Order". Comenzile sunt adaugate 
+in coada si, la sfarsit, executate, prin obiectul de tip "OrderPlacer" (Command
+ Pattern).
